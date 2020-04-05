@@ -1,16 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:qr_reader/src/providers/db.dart';
+import 'package:qr_reader/src/bloc/scans.dart';
+import 'package:qr_reader/src/models/scan.dart';
+import 'package:qr_reader/src/utils/scan_utils.dart' as util;
 
-class MapsPage extends StatefulWidget {
-  @override
-  _MapsPageState createState() => _MapsPageState();
-}
+class MapsPage extends StatelessWidget {
+  final ScansBloc _scansBloc = ScansBloc();
 
-class _MapsPageState extends State<MapsPage> {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: DBProvider.db.getScans(),
+    _scansBloc.getScans();
+    return StreamBuilder(
+        stream: _scansBloc.scansStream,
         builder: (BuildContext build, AsyncSnapshot<List<Scan>> snapshot) {
           if (!snapshot.hasData) {
             return Center(
@@ -23,35 +24,42 @@ class _MapsPageState extends State<MapsPage> {
             return Center(child: Text('There is not information'));
           }
 
-          return ListView.builder(
-            itemCount: scans.length,
-            itemBuilder: (BuildContext context, int index) => Dismissible(
-              background: Container(
-                color: Colors.red,
-              ),
-              secondaryBackground: Container(
-                color: Colors.greenAccent,
-              ),
-              onDismissed: (DismissDirection dismiss) {
-                setState(() {
-                  scans.removeAt(index);
-                });
-              },
-              child: ListTile(
-                leading: Icon(
-                  Icons.cloud_queue,
-                  color: Theme.of(context).primaryColor,
+          return RefreshIndicator(
+            child: ListView.builder(
+              itemCount: scans.length,
+              itemBuilder: (BuildContext context, int index) => Dismissible(
+                background: Container(
+                  color: Colors.red,
+                  child: Center(
+                    child: Text(
+                      'Remove',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ),
-                title: Text(scans[index].value),
-                trailing: Icon(
-                  Icons.keyboard_arrow_right,
-                  color: Colors.grey,
+                onDismissed: (DismissDirection dismiss) {
+                  _scansBloc.deleScan(scans[index].id);
+                },
+                child: ListTile(
+                  leading: Icon(
+                    Icons.map,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  title: Text(scans[index].value),
+                  subtitle: Text(scans[index].id.toString()),
+                  trailing: Icon(
+                    Icons.keyboard_arrow_right,
+                    color: Colors.grey,
+                  ),
+                  onTap: () => util.openScan(scans[index], context),
                 ),
-              ),
-              key: Key(
-                scans[index].id.toString(),
+                key: UniqueKey(),
               ),
             ),
+            onRefresh: () {
+              Duration duration = Duration(milliseconds: 1000);
+              return Future.delayed(duration);
+            },
           );
         });
   }

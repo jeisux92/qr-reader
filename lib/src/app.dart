@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_reader/src/pages/home.dart';
+import 'package:qr_reader/src/pages/map.dart';
 
 class App extends StatelessWidget {
   @override
@@ -12,6 +13,7 @@ class App extends StatelessWidget {
       title: 'QR Reader',
       routes: {
         '/': (BuildContext context) => HomePage(),
+        'map': (BuildContext context) => MapPage(),
       },
     );
   }

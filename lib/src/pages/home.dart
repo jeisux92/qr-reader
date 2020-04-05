@@ -1,8 +1,12 @@
+import 'dart:io';
+
+import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_reader/src/bloc/scans.dart';
 import 'package:qr_reader/src/models/scan.dart';
 import 'package:qr_reader/src/pages/addresses.dart';
 import 'package:qr_reader/src/pages/maps.dart';
-import 'package:qr_reader/src/providers/db.dart';
+import 'package:qr_reader/src/utils/scan_utils.dart' as utils;
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,6 +15,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _indexPage = 0;
+  final ScansBloc _scansBloc = ScansBloc();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,7 +25,9 @@ class _HomePageState extends State<HomePage> {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.delete_forever),
-            onPressed: () {},
+            onPressed: () {
+              _scansBloc.deleteAll();
+            },
           )
         ],
       ),
@@ -33,7 +41,7 @@ class _HomePageState extends State<HomePage> {
         ),
         backgroundColor: Theme.of(context).primaryColor,
         onPressed: () {
-          _scanQr();
+          _scanQr(context);
         },
       ),
       bottomNavigationBar: _createBottomNavigationBar(),
@@ -41,23 +49,26 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _createBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: _indexPage,
-      onTap: (int index) {
-        setState(() {
-          _indexPage = index;
-        });
-      },
-      items: <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.map),
-          title: Text('Maps'),
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.brightness_5),
-          title: Text('Adresses'),
-        )
-      ],
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      child: BottomNavigationBar(
+        currentIndex: _indexPage,
+        onTap: (int index) {
+          setState(() {
+            _indexPage = index;
+          });
+        },
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            title: Text('Maps'),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.brightness_5),
+            title: Text('Adresses'),
+          )
+        ],
+      ),
     );
   }
 
@@ -72,20 +83,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _scanQr() async {
-    // https://github.com/jeisux92
+  void _scanQr(BuildContext context) async {
+    String futureString;
 
-    String futureString = 'https://github.com/jeisux92';
-
-    // try {
-    //   futureString = await BarcodeScanner.scan();
-    // } catch (e) {}
-
-    // print('futureString: $futureString');
+    try {
+      futureString = await BarcodeScanner.scan();
+    } catch (e) {}
 
     if (futureString != null) {
       Scan scan = Scan(value: futureString);
-      await DBProvider.db.newScan(scan);
+      await _scansBloc.addScan(scan);
+
+      if (Platform.isIOS) {
+        Future.delayed(Duration(milliseconds: 750), () {
+          utils.openScan(scan, context);
+        });
+      } else {
+        utils.openScan(scan, context);
+      }
+    } else {
+      SnackBar(
+        content: Text('error'),
+      );
     }
   }
 }

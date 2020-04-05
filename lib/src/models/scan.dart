@@ -1,3 +1,5 @@
+import 'package:latlong/latlong.dart';
+
 class Scan {
   int id;
   String type;
@@ -13,6 +15,13 @@ class Scan {
     } else {
       this.type = 'geo';
     }
+  }
+
+  getLatitud() {
+    final lalo = value.substring(4).split(',');
+    final lat = double.parse(lalo[0]);
+    final lng = double.parse(lalo[0]);
+    return LatLng(lat, lng);
   }
 
   factory Scan.fromJson(Map<String, dynamic> json) => Scan(
